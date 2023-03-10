@@ -24,9 +24,10 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         binding.buttonLoad.setOnClickListener {
             // Для то го что бы при уничножении activity уничножались запущенные потоки
-            lifecycleScope.launch{
+/*            lifecycleScope.launch{
                 loadData()
-            }
+            }*/
+            loadWithoutCoroutine()
         }
     }
 
@@ -35,12 +36,64 @@ class MainActivity : AppCompatActivity() {
         binding.progress.isVisible = true
         binding.buttonLoad.isEnabled = false
         val city = loadCity()
+
         binding.tvLocation.text = city
         val temp = loadTemperature(city)
+
         binding.tvTemperature.text = temp.toString()
         binding.progress.isVisible = false
         binding.buttonLoad.isEnabled = true
         Log.d("MainActivity", "FINISH: $this")
+    }
+
+    private fun loadWithoutCoroutine(step: Int = 0, obj: Any? = null){
+        when(step){
+            0->{
+                Log.d("MainActivity", "START: $this")
+                binding.progress.isVisible = true
+                binding.buttonLoad.isEnabled = false
+                loadCityWithoutCoroutine {
+                    loadWithoutCoroutine(1 , it)
+                }
+            }
+            1->{
+                val city = obj as String
+                binding.tvLocation.text = city
+                loadTemperatureWithoutCoroutine(city){
+                    loadWithoutCoroutine(2, it)
+                }
+            }
+            2->{
+                val temp = obj as Int
+                binding.tvTemperature.text = temp.toString()
+                binding.progress.isVisible = false
+                binding.buttonLoad.isEnabled = true
+                Log.d("MainActivity", "FINISH: $this")
+            }
+        }
+    }
+    private fun loadCityWithoutCoroutine(callback: (String) -> Unit) {
+        thread {
+            Thread.sleep(5000)
+            runOnUiThread {
+                callback.invoke("Moscow")
+            }
+        }
+    }
+    private fun loadTemperatureWithoutCoroutine(city: String, callback: (Int) -> Unit) {
+        thread {
+            runOnUiThread {
+                Toast.makeText(
+                    this,
+                    getString(R.string.loading_temperature_toast, city),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+            Thread.sleep(5000)
+            runOnUiThread {
+                callback.invoke(17)
+            }
+        }
     }
 
     private suspend fun loadCity(): String {
