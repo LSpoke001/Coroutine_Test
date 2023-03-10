@@ -17,16 +17,29 @@ class MainActivity : AppCompatActivity() {
     private val binding by lazy {
         ActivityMainBinding.inflate(layoutInflater)
     }
+
+    private val handler = object : Handler(){
+        override fun handleMessage(msg: Message) {
+            super.handleMessage(msg)
+            binding.textViewCount.text = "Load: ${msg.what}"
+            if(msg.what == 9){
+                binding.buttonLoad.isEnabled = true
+            }
+        }
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
         binding.buttonLoad.setOnClickListener {
-            for(i in 0 until 10){
-                Thread.sleep(1000)
-                Log.d("MainActivity", "START ${i}")
-                binding.textViewCount.text = "Загружено: $i"
-            }
-
+            binding.buttonLoad.isEnabled = false
+            val thread = Thread(Runnable {
+                for(i in 0 until 10){
+                    Thread.sleep(1000)
+                    Log.d("MainActivity", "START ${i}")
+                    handler.sendEmptyMessage(i)
+                }
+            })
+            thread.start()
         }
         binding.buttonTest.setOnClickListener {
             Log.d("MainActivity", "TEST")
