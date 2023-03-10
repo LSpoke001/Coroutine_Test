@@ -73,27 +73,20 @@ class MainActivity : AppCompatActivity() {
         }
     }
     private fun loadCityWithoutCoroutine(callback: (String) -> Unit) {
-        thread {
-            Thread.sleep(5000)
-            runOnUiThread {
-                callback.invoke("Moscow")
-            }
-        }
+        Handler(Looper.getMainLooper()).postDelayed({
+            callback.invoke("Moscow")
+        }, 5000)
     }
     private fun loadTemperatureWithoutCoroutine(city: String, callback: (Int) -> Unit) {
-        thread {
-            runOnUiThread {
-                Toast.makeText(
-                    this,
-                    getString(R.string.loading_temperature_toast, city),
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-            Thread.sleep(5000)
-            runOnUiThread {
-                callback.invoke(17)
-            }
-        }
+        Toast.makeText(
+            this,
+            getString(R.string.loading_temperature_toast, city),
+            Toast.LENGTH_SHORT
+        ).show()
+        Handler(Looper.getMainLooper()).postDelayed({
+            callback.invoke(17)
+        }, 5000)
+
     }
 
     private suspend fun loadCity(): String {
