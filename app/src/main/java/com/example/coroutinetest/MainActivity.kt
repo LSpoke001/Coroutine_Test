@@ -5,9 +5,13 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
+import android.util.Log
 import android.widget.Toast
 import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
 import com.example.coroutinetest.databinding.ActivityMainBinding
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.concurrent.thread
 
 class MainActivity : AppCompatActivity() {
@@ -15,57 +19,42 @@ class MainActivity : AppCompatActivity() {
         ActivityMainBinding.inflate(layoutInflater)
     }
 
-    private val handler = object : Handler(){
-        override fun handleMessage(msg: Message) {
-            super.handleMessage(msg)
-            println("HANDLER_MSG $msg")
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
         binding.buttonLoad.setOnClickListener {
-            loadData()
+            // Для то го что бы при уничножении activity уничножались запущенные потоки
+            lifecycleScope.launch{
+                loadData()
+            }
         }
-        handler.sendMessage(Message.obtain(handler, 0, 17))
     }
 
-    private fun loadData() {
+    private suspend fun loadData() {
+        Log.d("MainActivity", "START: $this")
         binding.progress.isVisible = true
         binding.buttonLoad.isEnabled = false
-        loadCity{
-            binding.tvLocation.text = it
-            loadTemperature(it){
-                binding.tvTemperature.text = it.toString()
-                binding.progress.isVisible = false
-                binding.buttonLoad.isEnabled = true
-            }
-        }
+        val city = loadCity()
+        binding.tvLocation.text = city
+        val temp = loadTemperature(city)
+        binding.tvTemperature.text = temp.toString()
+        binding.progress.isVisible = false
+        binding.buttonLoad.isEnabled = true
+        Log.d("MainActivity", "FINISH: $this")
     }
 
-    private fun loadCity(callback: (String) -> Unit) {
-        thread {
-            Thread.sleep(5000)
-            runOnUiThread {
-                callback.invoke("Moscow")
-            }
-        }
+    private suspend fun loadCity(): String {
+        delay(5000)
+        return "Moscow"
     }
 
-    private fun loadTemperature(city: String, callback: (Int) -> Unit) {
-        thread {
-            runOnUiThread{
-                Toast.makeText(
-                    this,
-                    getString(R.string.loading_temperature_toast, city),
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-            Thread.sleep(5000)
-            runOnUiThread{
-                callback.invoke(17)
-            }
-        }
+    private suspend fun loadTemperature(city: String): Int {
+        Toast.makeText(
+            this,
+            getString(R.string.loading_temperature_toast, city),
+            Toast.LENGTH_SHORT
+        ).show()
+        delay(5000)
+        return 17
     }
 }
